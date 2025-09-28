@@ -69,7 +69,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap.uiSettings.isZoomControlsEnabled = true   // aktifkan tombol zoom
+        mMap.uiSettings.isZoomControlsEnabled = true   // tombol zoom aktif
         mMap.uiSettings.isMapToolbarEnabled = true
 
         // cek permission lokasi
@@ -83,7 +83,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             else -> requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
 
-        // klik map → tampilkan dialog input nama marker
+        // klik map → input nama marker
         mMap.setOnMapClickListener { latLng ->
             val editText = EditText(this)
             editText.hint = "Nama spot"
@@ -114,7 +114,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val autocompleteFragment =
             supportFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
 
-        // field yang mau diambil dari hasil search
         autocompleteFragment.setPlaceFields(
             listOf(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG)
         )
@@ -155,7 +154,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         location?.let {
                             val userLocation = LatLng(it.latitude, it.longitude)
                             updateMapLocation(userLocation)
-                            addUserMarker(userLocation) // pakai marker default
+                            addUserMarker(userLocation) // default marker
                         }
                     }
             } catch (e: SecurityException) {
@@ -170,21 +169,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15f))
     }
 
-    // convert vector drawable ke BitmapDescriptor
+    // convert vector drawable ke BitmapDescriptor dengan ukuran default marker (48dp)
     private fun vectorToBitmap(drawableId: Int): BitmapDescriptor {
         val vectorDrawable = ContextCompat.getDrawable(this, drawableId)!!
-        val bitmap = Bitmap.createBitmap(
-            vectorDrawable.intrinsicWidth,
-            vectorDrawable.intrinsicHeight,
-            Bitmap.Config.ARGB_8888
-        )
+
+        val defaultSizeDp = 48
+        val density = resources.displayMetrics.density
+        val width = (defaultSizeDp * density).toInt()
+        val height = (defaultSizeDp * density).toInt()
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
         vectorDrawable.draw(canvas)
         return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
 
-    // marker untuk lokasi user (pakai default icon Google Maps)
+    // marker lokasi user → default icon Google Maps
     private fun addUserMarker(location: LatLng) {
         mMap.addMarker(
             MarkerOptions()
@@ -194,7 +195,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         )
     }
 
-    // marker untuk spot baru (pakai icon restaurant custom)
+    // marker spot baru → icon restaurant dengan ukuran sama default
     private fun addSpotMarker(location: LatLng, title: String) {
         val icon = vectorToBitmap(R.drawable.ic_restaurant)
         mMap.addMarker(
