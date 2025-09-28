@@ -3,10 +3,10 @@ package com.example.miniapp_mapsalbum
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.PopupMenu
+import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -20,6 +20,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -27,10 +28,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
 
     private val fusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
+
+    private var currentMarker: Marker? = null
+    private val markerImages = mutableMapOf<Marker, Uri?>() // menyimpan foto tiap marker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +55,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (isGranted) getLastLocation()
                 else showPermissionRationale { requestPermissionLauncher.launch(ACCESS_FINE_LOCATION) }
             }
+
+        // Registrasi launcher untuk pilih gambar
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                currentMarker?.let { marker ->
+                    markerImages[marker] = it
+                }
+            }
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -84,9 +98,72 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
             )
         }
+
+        // Listener klik marker untuk edit info (pop up nama & foto)
+        mMap.setOnMarkerClickListener { marker ->
+            showMarkerEditDialog(marker)
+            true
+        }
     }
 
-    // Tampilkan menu pilihan jenis peta
+    private fun showMarkerEditDialog(marker: Marker) {
+        currentMarker = marker
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Edit Marker Info")
+
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        val padding = 50
+        layout.setPadding(padding, padding, padding, padding)
+
+        // EditText untuk nama marker
+        val inputTitle = EditText(this)
+        inputTitle.hint = "Nama marker"
+        inputTitle.setText(marker.title ?: "")
+        inputTitle.setPadding(0, 20, 0, 20)
+
+        // TextView koordinat
+        val infoLatLng = TextView(this)
+        infoLatLng.text = "Lat: ${marker.position.latitude}, Lng: ${marker.position.longitude}"
+        infoLatLng.setPadding(0, 20, 0, 20)
+
+        // ImageView preview foto marker
+        val imageView = ImageView(this)
+        imageView.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            400
+        )
+        imageView.setPadding(0, 20, 0, 20)
+        markerImages[marker]?.let { imageView.setImageURI(it) }
+
+        // Tombol pilih foto
+        val btnPickImage = Button(this)
+        btnPickImage.text = "Pilih Foto"
+        btnPickImage.setOnClickListener {
+            currentMarker = marker
+            pickImageLauncher.launch("image/*")
+        }
+
+        // Tambahkan view ke layout
+        layout.addView(inputTitle)
+        layout.addView(infoLatLng)
+        layout.addView(imageView)
+        layout.addView(btnPickImage)
+
+        builder.setView(layout)
+
+        builder.setPositiveButton("Simpan") { dialog, _ ->
+            val title = inputTitle.text.toString()
+            if (title.isNotEmpty()) marker.title = title
+            marker.showInfoWindow()
+            dialog.dismiss()
+        }
+
+        builder.setNegativeButton("Batal") { dialog, _ -> dialog.dismiss() }
+
+        builder.create().show()
+    }
+
     private fun showMapTypeMenu(anchor: Button) {
         val popup = PopupMenu(this, anchor)
         popup.menu.add("Normal")
@@ -125,11 +202,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .addOnSuccessListener { location: Location? ->
                         location?.let {
                             val userLocation = LatLng(it.latitude, it.longitude)
-
-                            // Geser kamera ke lokasi user
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f))
-
-                            // Tambah marker lokasi user
                             mMap.addMarker(
                                 MarkerOptions()
                                     .position(userLocation)
