@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">MiniApp_MapsAlbum</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="google_maps_key">AIzaSyC_93tPtzLM6mGmdnk6tEvwlEETLX8laMI</string>
+
 </resources>
