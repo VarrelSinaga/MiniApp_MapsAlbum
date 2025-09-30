@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
+import android.location.Geocoder
+import java.util.Locale
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -62,6 +64,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 currentMarker?.let { marker ->
                     markerImages[marker] = it
                 }
+            }
+        }
+
+        // === Hubungkan search bar ===
+        val etSearch: EditText = findViewById(R.id.etSearch)
+        val btnSearch: ImageButton = findViewById(R.id.btnSearch)
+
+        // Tekan tombol search icon
+        btnSearch.setOnClickListener {
+            val locationName = etSearch.text.toString()
+            searchLocation(locationName)
+        }
+
+        // Tekan tombol enter/imeOptions di keyboard
+        etSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                val locationName = etSearch.text.toString()
+                searchLocation(locationName)
+                true
+            } else {
+                false
             }
         }
     }
@@ -216,6 +239,32 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         } else {
             requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+    }
+
+    private fun searchLocation(locationName: String) {
+        if (locationName.isEmpty()) return
+        val geocoder = Geocoder(this, Locale.getDefault())
+        try {
+            val addresses = geocoder.getFromLocationName(locationName, 1)
+            if (!addresses.isNullOrEmpty()) {
+                val address = addresses[0]
+                val latLng = LatLng(address.latitude, address.longitude)
+
+                // Tambahkan marker baru di lokasi hasil search
+                mMap.addMarker(
+                    MarkerOptions()
+                        .position(latLng)
+                        .title(locationName)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                )
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+            } else {
+                Toast.makeText(this, "Lokasi tidak ditemukan", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Gagal mencari lokasi", Toast.LENGTH_SHORT).show()
         }
     }
 }
