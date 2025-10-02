@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.play.services.location)
     implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.google.android.libraries.places:places:3.5.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
