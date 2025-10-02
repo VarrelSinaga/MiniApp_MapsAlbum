@@ -2,6 +2,7 @@ package com.example.miniapp_mapsalbum
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -19,9 +20,12 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PolygonOptions
+import com.google.android.gms.maps.model.PolylineOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -87,6 +91,53 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             else -> requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
+
+        // Tambahkan Polyline di UMN ke Bethsaida
+        val umnToBethsaida = PolylineOptions()
+            .add(LatLng(-6.256718, 106.618209))
+            .add(LatLng(-6.255982, 106.618434))
+            .add(LatLng(-6.256061, 106.621020))
+            .add(LatLng(-6.254611, 106.622085))
+            .add(LatLng(-6.254752, 106.622383))
+            .color(Color.RED)
+            .width(10.0f)
+        val u2bPolyline = mMap.addPolyline(umnToBethsaida)
+
+        // Tambahkan Polyline dari UMN ke SDC
+        val umnToSdc = PolylineOptions()
+            .add(LatLng(-6.256718, 106.618209))
+            .add(LatLng(-6.256166, 106.618363))
+            .add(LatLng(-6.256251, 106.617400))
+            .add(LatLng(-6.255877, 106.616238))
+            .add(LatLng(-6.256302, 106.616085))
+            .color(Color.GREEN)
+            .width(10.0f)
+        val u2sdcPolyline = mMap.addPolyline(umnToSdc)
+
+
+        // Tambahkan Polygon di UMN
+        val umnCampus = PolygonOptions()
+            .add(LatLng(-6.256302, 106.617534))
+            .add(LatLng(-6.256099, 106.619744))
+            .add(LatLng(-6.256558, 106.619851))
+            .add(LatLng(-6.259374, 106.618639))
+            .add(LatLng(-6.258659, 106.616740))
+            .add(LatLng(-6.256302, 106.617534))
+            .strokeColor(Color.BLUE)
+            .strokeWidth(10.0f)
+            .fillColor(Color.argb(20, 0, 255, 255))
+        val umnArea = mMap.addPolygon(umnCampus)
+
+        // Tambahkan circle di UMN
+        val umn = LatLng(-6.2574591, 106.6183484)
+        val circleUmn = CircleOptions()
+            .center(umn)
+            .radius(500.0)
+            .strokeColor(Color.YELLOW)
+            .fillColor(Color.argb(30, 255, 255, 0))
+        val UMNAreaIn500m = mMap.addCircle(circleUmn)
+
+
 
         // Listener long press map untuk menambah marker
         mMap.setOnMapLongClickListener { latLng ->
