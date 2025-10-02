@@ -7,8 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
-import android.location.Geocoder
-import java.util.Locale
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -39,55 +37,39 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var currentMarker: Marker? = null
     private val markerImages = mutableMapOf<Marker, Uri?>() // menyimpan foto tiap marker
 
-    // Reference ImageView dialog aktif
-    private var currentMarkerImageView: ImageView? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Ambil map fragment
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        // Tombol pilih jenis peta
         binding.btnMapType.setOnClickListener { showMapTypeMenu(it as Button) }
 
+        // Registrasi permission launcher
         requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) getLastLocation()
                 else showPermissionRationale { requestPermissionLauncher.launch(ACCESS_FINE_LOCATION) }
             }
 
+        // Registrasi launcher untuk pilih gambar
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let { selectedUri ->
+            uri?.let {
                 currentMarker?.let { marker ->
-                    markerImages[marker] = selectedUri
-                    // update preview jika ImageView dialog aktif
-                    currentMarkerImageView?.setImageURI(selectedUri)
+                    markerImages[marker] = it
                 }
             }
-        }
-
-        val etSearch: EditText = findViewById(R.id.etSearch)
-        val btnSearch: ImageButton = findViewById(R.id.btnSearch)
-
-        btnSearch.setOnClickListener {
-            val locationName = etSearch.text.toString()
-            searchLocation(locationName)
-        }
-
-        etSearch.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                val locationName = etSearch.text.toString()
-                searchLocation(locationName)
-                true
-            } else false
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
+        // === Atur UI controls & gesture map ===
         val uiSettings = mMap.uiSettings
         uiSettings.isZoomControlsEnabled = true
         uiSettings.isCompassEnabled = true
@@ -97,6 +79,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         uiSettings.isTiltGesturesEnabled = true
         uiSettings.isRotateGesturesEnabled = true
 
+        // Cek izin lokasi
         when {
             hasLocationPermission() -> getLastLocation()
             shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) -> {
@@ -105,17 +88,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             else -> requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
 
+        // Listener long press map untuk menambah marker
         mMap.setOnMapLongClickListener { latLng ->
-            val marker = mMap.addMarker(
+            mMap.addMarker(
                 MarkerOptions()
                     .position(latLng)
                     .title("Marker Baru")
                     .snippet("Lat: ${latLng.latitude}, Lng: ${latLng.longitude}")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
             )
-            marker?.let { markerImages[it] = null } // initialize foto null
         }
 
+        // Listener klik marker untuk edit info (pop up nama & foto)
         mMap.setOnMarkerClickListener { marker ->
             showMarkerEditDialog(marker)
             true
@@ -127,22 +111,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Edit Marker Info")
 
-        val scrollView = ScrollView(this)
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
-        val padding = 30
+        val padding = 50
         layout.setPadding(padding, padding, padding, padding)
-        scrollView.addView(layout)
 
+        // EditText untuk nama marker
         val inputTitle = EditText(this)
         inputTitle.hint = "Nama marker"
         inputTitle.setText(marker.title ?: "")
         inputTitle.setPadding(0, 20, 0, 20)
 
+        // TextView koordinat
         val infoLatLng = TextView(this)
         infoLatLng.text = "Lat: ${marker.position.latitude}, Lng: ${marker.position.longitude}"
         infoLatLng.setPadding(0, 20, 0, 20)
 
+        // ImageView preview foto marker
         val imageView = ImageView(this)
         imageView.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -151,8 +136,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         imageView.setPadding(0, 20, 0, 20)
         markerImages[marker]?.let { imageView.setImageURI(it) }
 
-        currentMarkerImageView = imageView // simpan reference untuk update saat pickImageLauncher
-
+        // Tombol pilih foto
         val btnPickImage = Button(this)
         btnPickImage.text = "Pilih Foto"
         btnPickImage.setOnClickListener {
@@ -160,12 +144,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             pickImageLauncher.launch("image/*")
         }
 
+        // Tambahkan view ke layout
         layout.addView(inputTitle)
         layout.addView(infoLatLng)
         layout.addView(imageView)
         layout.addView(btnPickImage)
 
-        builder.setView(scrollView)
+        builder.setView(layout)
 
         builder.setPositiveButton("Simpan") { dialog, _ ->
             val title = inputTitle.text.toString()
@@ -174,18 +159,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             dialog.dismiss()
         }
 
-        builder.setNeutralButton("Hapus Marker") { dialog, _ ->
-            markerImages.remove(marker)
-            marker.remove()
-            dialog.dismiss()
-        }
-
         builder.setNegativeButton("Batal") { dialog, _ -> dialog.dismiss() }
-
-        builder.setOnDismissListener {
-            // clear reference ImageView ketika dialog ditutup
-            currentMarkerImageView = null
-        }
 
         builder.create().show()
     }
@@ -229,13 +203,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         location?.let {
                             val userLocation = LatLng(it.latitude, it.longitude)
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f))
-                            val marker = mMap.addMarker(
+                            mMap.addMarker(
                                 MarkerOptions()
                                     .position(userLocation)
                                     .title("Lokasi Saya")
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                             )
-                            marker?.let { markerImages[it] = null }
                         }
                     }
             } catch (e: SecurityException) {
@@ -243,26 +216,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         } else {
             requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
-        }
-    }
-
-    private fun searchLocation(locationName: String) {
-        if (locationName.isEmpty()) return
-        val geocoder = Geocoder(this, Locale.getDefault())
-        try {
-            val addresses = geocoder.getFromLocationName(locationName, 1)
-            if (!addresses.isNullOrEmpty()) {
-                val address = addresses[0]
-                val latLng = LatLng(address.latitude, address.longitude)
-
-                // Geser kamera tanpa menambah marker
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
-            } else {
-                Toast.makeText(this, "Lokasi tidak ditemukan", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Gagal mencari lokasi", Toast.LENGTH_SHORT).show()
         }
     }
 }
