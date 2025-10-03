@@ -2,109 +2,247 @@ package com.example.miniapp_mapsalbum
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
-import androidx.appcompat.app.AppCompatActivity
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-
+import com.example.miniapp_mapsalbum.databinding.ActivityMapsBinding
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.example.miniapp_mapsalbum.databinding.ActivityMapsBinding
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.PolygonOptions
+import com.google.android.gms.maps.model.PolylineOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
-    //This is the variable through which we will launch the permission request and track user responses
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
-    //A google play location service which helps us interact with Google's Fused Location Provider API
-    //The API intelligently provides us with the device location information
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
+
     private val fusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
 
+    private var currentMarker: Marker? = null
+    private val markerImages = mutableMapOf<Marker, Uri?>() // menyimpan foto tiap marker
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+        // Ambil map fragment
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-        //This is used to register for activity result
-        //The activity result will be used to handle the permission request to the user
-        //It accepts an ActivityResultContract as a parameter
-        //which in this case we're using the RequestPermission() ActivityResultContract
-        requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-                isGranted -> if (isGranted) {
-            //If granted by the user, execute the necessary function
-            getLastLocation()
-        } else {
-            //If not granted, show a rationale dialog
-            //A rationale dialog is used for a warning to the user that the app will now work without the required permission
-            showPermissionRationale {
-                requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+
+        // Tombol pilih jenis peta
+        binding.btnMapType.setOnClickListener { showMapTypeMenu(it as Button) }
+
+        // Registrasi permission launcher
+        requestPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) getLastLocation()
+                else showPermissionRationale { requestPermissionLauncher.launch(ACCESS_FINE_LOCATION) }
             }
-        }
+
+        // Registrasi launcher untuk pilih gambar
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                currentMarker?.let { marker ->
+                    markerImages[marker] = it
+                }
+            }
         }
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
-        //OnMapReady is called when the map is ready to be used
-        //The code below is used to check for the location permission for the map functionality to work
-        //If it's not granted yet, then the rationale dialog will be brought up
+        // === Atur UI controls & gesture map ===
+        val uiSettings = mMap.uiSettings
+        uiSettings.isZoomControlsEnabled = true
+        uiSettings.isCompassEnabled = true
+        uiSettings.isMapToolbarEnabled = true
+        uiSettings.isZoomGesturesEnabled = true
+        uiSettings.isScrollGesturesEnabled = true
+        uiSettings.isTiltGesturesEnabled = true
+        uiSettings.isRotateGesturesEnabled = true
+
+        // Cek izin lokasi
         when {
             hasLocationPermission() -> getLastLocation()
-            //shouldShowRequestPermissionRationale automatically checks if the user has denied the permission before
-            //If it has, then the rationale dialog will be brought up
             shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) -> {
-                showPermissionRationale {
-                    requestPermissionLauncher
-                        .launch(ACCESS_FINE_LOCATION)
-                }
+                showPermissionRationale { requestPermissionLauncher.launch(ACCESS_FINE_LOCATION) }
             }
-            else -> requestPermissionLauncher
-                .launch(ACCESS_FINE_LOCATION)
+            else -> requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+
+        // Tambahkan Polyline di UMN ke Bethsaida
+        val umnToBethsaida = PolylineOptions()
+            .add(LatLng(-6.256718, 106.618209))
+            .add(LatLng(-6.255982, 106.618434))
+            .add(LatLng(-6.256061, 106.621020))
+            .add(LatLng(-6.254611, 106.622085))
+            .add(LatLng(-6.254752, 106.622383))
+            .color(Color.RED)
+            .width(10.0f)
+        val u2bPolyline = mMap.addPolyline(umnToBethsaida)
+
+        // Tambahkan Polyline dari UMN ke SDC
+        val umnToSdc = PolylineOptions()
+            .add(LatLng(-6.256718, 106.618209))
+            .add(LatLng(-6.256166, 106.618363))
+            .add(LatLng(-6.256251, 106.617400))
+            .add(LatLng(-6.255877, 106.616238))
+            .add(LatLng(-6.256302, 106.616085))
+            .color(Color.GREEN)
+            .width(10.0f)
+        val u2sdcPolyline = mMap.addPolyline(umnToSdc)
+
+
+        // Tambahkan Polygon di UMN
+        val umnCampus = PolygonOptions()
+            .add(LatLng(-6.256302, 106.617534))
+            .add(LatLng(-6.256099, 106.619744))
+            .add(LatLng(-6.256558, 106.619851))
+            .add(LatLng(-6.259374, 106.618639))
+            .add(LatLng(-6.258659, 106.616740))
+            .add(LatLng(-6.256302, 106.617534))
+            .strokeColor(Color.BLUE)
+            .strokeWidth(10.0f)
+            .fillColor(Color.argb(20, 0, 255, 255))
+        val umnArea = mMap.addPolygon(umnCampus)
+
+        // Tambahkan circle di UMN
+        val umn = LatLng(-6.2574591, 106.6183484)
+        val circleUmn = CircleOptions()
+            .center(umn)
+            .radius(500.0)
+            .strokeColor(Color.YELLOW)
+            .fillColor(Color.argb(30, 255, 255, 0))
+        val UMNAreaIn500m = mMap.addCircle(circleUmn)
+
+
+
+        // Listener long press map untuk menambah marker
+        mMap.setOnMapLongClickListener { latLng ->
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title("Marker Baru")
+                    .snippet("Lat: ${latLng.latitude}, Lng: ${latLng.longitude}")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+            )
+        }
+
+        // Listener klik marker untuk edit info (pop up nama & foto)
+        mMap.setOnMarkerClickListener { marker ->
+            showMarkerEditDialog(marker)
+            true
         }
     }
 
-    //This is used to check if the user already has the permission granted
+    private fun showMarkerEditDialog(marker: Marker) {
+        currentMarker = marker
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Edit Marker Info")
+
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        val padding = 50
+        layout.setPadding(padding, padding, padding, padding)
+
+        // EditText untuk nama marker
+        val inputTitle = EditText(this)
+        inputTitle.hint = "Nama marker"
+        inputTitle.setText(marker.title ?: "")
+        inputTitle.setPadding(0, 20, 0, 20)
+
+        // TextView koordinat
+        val infoLatLng = TextView(this)
+        infoLatLng.text = "Lat: ${marker.position.latitude}, Lng: ${marker.position.longitude}"
+        infoLatLng.setPadding(0, 20, 0, 20)
+
+        // ImageView preview foto marker
+        val imageView = ImageView(this)
+        imageView.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            400
+        )
+        imageView.setPadding(0, 20, 0, 20)
+        markerImages[marker]?.let { imageView.setImageURI(it) }
+
+        // Tombol pilih foto
+        val btnPickImage = Button(this)
+        btnPickImage.text = "Pilih Foto"
+        btnPickImage.setOnClickListener {
+            currentMarker = marker
+            pickImageLauncher.launch("image/*")
+        }
+
+        // Tambahkan view ke layout
+        layout.addView(inputTitle)
+        layout.addView(infoLatLng)
+        layout.addView(imageView)
+        layout.addView(btnPickImage)
+
+        builder.setView(layout)
+
+        builder.setPositiveButton("Simpan") { dialog, _ ->
+            val title = inputTitle.text.toString()
+            if (title.isNotEmpty()) marker.title = title
+            marker.showInfoWindow()
+            dialog.dismiss()
+        }
+
+        builder.setNegativeButton("Batal") { dialog, _ -> dialog.dismiss() }
+
+        builder.create().show()
+    }
+
+    private fun showMapTypeMenu(anchor: Button) {
+        val popup = PopupMenu(this, anchor)
+        popup.menu.add("Normal")
+        popup.menu.add("Satellite")
+        popup.menu.add("Hybrid")
+        popup.menu.add("Terrain")
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.title) {
+                "Normal" -> mMap.mapType = GoogleMap.MAP_TYPE_NORMAL
+                "Satellite" -> mMap.mapType = GoogleMap.MAP_TYPE_SATELLITE
+                "Hybrid" -> mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
+                "Terrain" -> mMap.mapType = GoogleMap.MAP_TYPE_TERRAIN
+            }
+            true
+        }
+        popup.show()
+    }
+
     private fun hasLocationPermission() =
         ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    //This is used to bring up a rationale dialog which will be used to ask the user for permission again
-    //A rationale dialog is used for a warning to the user that the app will now work without the required permission
-    //Usually it's brought up when the user denies the needed permission in the previous permission request
     private fun showPermissionRationale(positiveAction: () -> Unit) {
-        //Create a pop up alert dialog that's used to ask for the required permission again to the user
         AlertDialog.Builder(this)
             .setTitle("Location permission")
-            .setMessage("This app will not work without knowing your current location")
+            .setMessage("This app needs your location to work properly")
             .setPositiveButton(android.R.string.ok) { _, _ -> positiveAction() }
-            .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss()
-            }
+            .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }
             .create().show()
     }
 
@@ -114,30 +252,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 fusedLocationProviderClient.lastLocation
                     .addOnSuccessListener { location: Location? ->
                         location?.let {
-                            val userLocation = LatLng(
-                                location.latitude,
-                                location.longitude
+                            val userLocation = LatLng(it.latitude, it.longitude)
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f))
+                            mMap.addMarker(
+                                MarkerOptions()
+                                    .position(userLocation)
+                                    .title("Lokasi Saya")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                             )
-                            updateMapLocation(userLocation)
-                            addMarkerAtLocation(userLocation, "You")
                         }
                     }
             } catch (e: SecurityException) {
-                Log.d("MapsActivity", "getLastLocation() called.")
+                Log.d("MapsActivity", "getLastLocation() SecurityException: ${e.message}")
             }
-        }else{
-            // If permission was rejected
+        } else {
             requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
     }
-
-    private fun updateMapLocation(location: LatLng) {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-            location, 7f))
-    }
-    private fun addMarkerAtLocation(location: LatLng, title: String) {
-        mMap.addMarker(MarkerOptions().title(title)
-            .position(location))
-    }
-
 }
