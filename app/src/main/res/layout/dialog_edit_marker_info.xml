@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/rounded_dialog_background"
+    android:gravity="center_horizontal"
+    android:layout_marginStart="32dp"
+    android:layout_marginEnd="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit Kenangan"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/et_marker_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nama Kenangan"
+        android:padding="12dp"
+        android:background="@drawable/edittext_background"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/tv_marker_latlng"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:textColor="@android:color/darker_gray"
+        android:padding="12dp"
+        android:background="@drawable/edittext_background"
+        android:layout_marginBottom="16dp"/>
+
+    <ImageView
+        android:id="@+id/iv_memory_image"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:background="@android:color/darker_gray"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btn_pick_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PILIH FOTO"
+        android:layout_marginBottom="16dp"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:backgroundTint="@color/purple_500"
+        android:textColor="@android:color/white"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btn_delete_marker"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HAPUS"
+            android:textColor="@color/purple_500"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BATAL"
+            android:textColor="@color/purple_500"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_save_marker"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SIMPAN"
+            android:textColor="@color/purple_500"/>
+
+    </LinearLayout>
+
+</LinearLayout>
