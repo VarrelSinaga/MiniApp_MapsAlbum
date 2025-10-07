@@ -3,11 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="24dp"
     android:background="@drawable/rounded_dialog_background"
-    android:gravity="center_horizontal"
-    android:layout_marginStart="32dp"
-    android:layout_marginEnd="32dp">
+    android:gravity="center_horizontal">
 
     <TextView
         android:layout_width="wrap_content"
@@ -38,8 +36,8 @@
 
     <ImageView
         android:id="@+id/iv_memory_image"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
         android:scaleType="centerCrop"
         android:visibility="gone"
         android:background="@android:color/darker_gray"
@@ -47,12 +45,12 @@
 
     <Button
         android:id="@+id/btn_pick_photo"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="PILIH FOTO"
         android:layout_marginBottom="16dp"
-        android:paddingLeft="24dp"
-        android:paddingRight="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
         android:backgroundTint="@color/purple_500"
         android:textColor="@android:color/white"/>
 
@@ -68,8 +66,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="HAPUS"
-            android:textColor="@color/purple_500"
-            android:layout_marginEnd="8dp"/>
+            android:textColor="@color/purple_500" />
 
         <Button
             android:id="@+id/btn_cancel"
@@ -77,8 +74,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="BATAL"
-            android:textColor="@color/purple_500"
-            android:layout_marginEnd="8dp"/>
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginStart="8dp"/>
 
         <Button
             android:id="@+id/btn_save_marker"
@@ -86,7 +83,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="SIMPAN"
-            android:textColor="@color/purple_500"/>
+            android:textColor="@color/purple_500"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp"/>
 
     </LinearLayout>
 

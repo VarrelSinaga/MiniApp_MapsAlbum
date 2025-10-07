@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
+    id("kotlin-kapt")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -41,6 +43,7 @@ android {
 
 dependencies {
 
+    implementation("androidx.exifinterface:exifinterface:1.3.6")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -56,4 +59,8 @@ dependencies {
     implementation("com.google.android.libraries.places:places:3.5.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // Untuk dukungan Coroutine
+    kapt("androidx.room:room-compiler:$room_version")
 }

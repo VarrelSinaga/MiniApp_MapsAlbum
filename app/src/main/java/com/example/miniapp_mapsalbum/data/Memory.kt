@@ -1,6 +1,5 @@
 package com.example.miniapp_mapsalbum.data
 
-// File: data/Memory.kt
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey

@@ -1,16 +1,12 @@
 package com.example.miniapp_mapsalbum
 
-import android.app.Dialog
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -19,10 +15,14 @@ import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.DialogFragment
 import com.example.miniapp_mapsalbum.data.Memory
 import java.io.File
+import android.graphics.Bitmap
+import android.util.Log
+import android.view.WindowManager
 
 class EditMarkerInfoDialogFragment : DialogFragment() {
 
     private var memory: Memory? = null
+    // (Deklarasi view lainnya)
     private lateinit var etTitle: EditText
     private lateinit var tvLatLng: EditText
     private lateinit var ivMemoryImage: ImageView
@@ -31,63 +31,42 @@ class EditMarkerInfoDialogFragment : DialogFragment() {
     private lateinit var btnCancel: Button
     private lateinit var btnDelete: Button
 
-    // MODIFIKASI: Ganti onMemoryDeleted menjadi onMemoryReset
+    // DIUBAH: Listener lebih jelas, onMemoryDeleted
     interface EditMarkerInfoListener {
         fun onMemorySaved(memory: Memory)
-        fun onMemoryReset(memory: Memory)
+        fun onMemoryDeleted(memory: Memory)
         fun onPickImageClicked(memoryToEdit: Memory?)
     }
 
     private var listener: EditMarkerInfoListener? = null
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            // Atur lebar dialog menjadi 90% dari lebar layar
+            val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
+            // Biarkan tinggi menyesuaikan dengan konten
+            val height = WindowManager.LayoutParams.WRAP_CONTENT
+            setLayout(width, height)
+        }
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        try {
-            listener = context as EditMarkerInfoListener
-        } catch (e: ClassCastException) {
+        listener = context as? EditMarkerInfoListener
+        if (listener == null) {
             throw ClassCastException("$context must implement EditMarkerInfoListener")
         }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        return dialog
-    }
-
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT
-        )
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        // (Sama seperti kode Anda)
         return inflater.inflate(R.layout.dialog_edit_marker_info, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        val currentMemory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arguments?.getParcelable(ARG_MEMORY, Memory::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            arguments?.getParcelable(ARG_MEMORY)
-        }
-
-        if (currentMemory == null) {
-            Toast.makeText(context, "Data kenangan tidak ditemukan.", Toast.LENGTH_SHORT).show()
-            dismiss()
-            return
-        }
-
-        this.memory = currentMemory
-
+        // ... (Inisialisasi semua View Anda di sini seperti kode sebelumnya)
         etTitle = view.findViewById(R.id.et_marker_title)
         tvLatLng = view.findViewById(R.id.tv_marker_latlng)
         ivMemoryImage = view.findViewById(R.id.iv_memory_image)
@@ -96,49 +75,49 @@ class EditMarkerInfoDialogFragment : DialogFragment() {
         btnCancel = view.findViewById(R.id.btn_cancel)
         btnDelete = view.findViewById(R.id.btn_delete_marker)
 
+        val currentMemory = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arguments?.getParcelable(ARG_MEMORY, Memory::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            arguments?.getParcelable(ARG_MEMORY)
+        } ?: return
+
+        this.memory = currentMemory
+
         etTitle.setText(currentMemory.title)
         tvLatLng.setText("Lat: ${currentMemory.latitude}, Lng: ${currentMemory.longitude}")
+        currentMemory.imagePath?.let { updateImageView(it) }
 
-        currentMemory.imagePath?.let { path ->
-            updateImageView(path)
-        } ?: run { ivMemoryImage.visibility = View.GONE }
-
-
-        btnPickPhoto.setOnClickListener {
-            listener?.onPickImageClicked(currentMemory)
-        }
+        btnPickPhoto.setOnClickListener { listener?.onPickImageClicked(currentMemory) }
 
         btnSave.setOnClickListener {
-            currentMemory.title = etTitle.text.toString()
+            val title = etTitle.text.toString()
+            if (title.isBlank()) {
+                etTitle.error = "Judul tidak boleh kosong"
+                return@setOnClickListener
+            }
+            currentMemory.title = title
             listener?.onMemorySaved(currentMemory)
             dismiss()
         }
 
-        btnCancel.setOnClickListener {
-            dismiss()
-        }
+        btnCancel.setOnClickListener { dismiss() }
 
-        // MODIFIKASI: Logika tombol HAPUS diubah menjadi RESET
-        btnDelete.setOnClickListener {
-            if (currentMemory.id != 0L) {
-                // Panggil fungsi onMemoryReset yang baru
-                listener?.onMemoryReset(currentMemory)
-                dismiss()
-            } else {
-                Toast.makeText(context, "Tidak bisa mereset kenangan yang belum disimpan.", Toast.LENGTH_SHORT).show()
-                dismiss()
-            }
-        }
-        // MODIFIKASI: Ubah teks tombolnya
-        btnDelete.text = "RESET"
-
-
+        // DIUBAH: Logika tombol Hapus
         if (currentMemory.id == 0L) {
             btnDelete.visibility = View.GONE
+        } else {
+            btnDelete.visibility = View.VISIBLE
+            btnDelete.text = "HAPUS"
+            btnDelete.setOnClickListener {
+                listener?.onMemoryDeleted(currentMemory)
+                dismiss()
+            }
         }
     }
 
     fun updateImageView(imagePath: String?) {
+        // (Logika updateImageView Anda sudah bagus, tidak perlu diubah)
         if (imagePath != null) {
             val file = File(imagePath)
             if (file.exists()) {
@@ -155,29 +134,18 @@ class EditMarkerInfoDialogFragment : DialogFragment() {
                     val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                     ivMemoryImage.setImageBitmap(rotatedBitmap)
                 } catch (e: Exception) {
-                    Log.e("EditMarkerInfo", "Error reading EXIF or rotating image: ${e.message}")
+                    Log.e("EditMarkerInfo", "Error rotating image: ${e.message}")
                     ivMemoryImage.setImageBitmap(bitmap)
                 }
-
                 ivMemoryImage.visibility = View.VISIBLE
-            } else {
-                ivMemoryImage.visibility = View.GONE
             }
-        } else {
-            ivMemoryImage.visibility = View.GONE
         }
     }
 
     companion object {
         private const val ARG_MEMORY = "memory"
-
-        fun newInstance(memory: Memory): EditMarkerInfoDialogFragment {
-            val fragment = EditMarkerInfoDialogFragment()
-            val args = Bundle().apply {
-                putParcelable(ARG_MEMORY, memory)
-            }
-            fragment.arguments = args
-            return fragment
+        fun newInstance(memory: Memory) = EditMarkerInfoDialogFragment().apply {
+            arguments = Bundle().apply { putParcelable(ARG_MEMORY, memory) }
         }
     }
 }
