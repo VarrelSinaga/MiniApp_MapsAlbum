@@ -73,6 +73,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         // BARU: Muat semua kenangan dari database saat peta siap
         loadAndDisplayAllMemories()
+
     }
 
     private fun setupLaunchers() {
