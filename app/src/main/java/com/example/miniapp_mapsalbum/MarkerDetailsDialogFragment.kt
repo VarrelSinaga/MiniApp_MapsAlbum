@@ -1,23 +1,27 @@
 package com.example.miniapp_mapsalbum
 
+import android.app.Dialog
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.DialogFragment
 import com.example.miniapp_mapsalbum.data.Memory
 
 // (Import lainnya sama seperti kode Anda)
-import android.graphics.BitmapFactory
-import androidx.exifinterface.media.ExifInterface
 import java.io.File
-import android.graphics.Bitmap
-import android.util.Log
 
 class MarkerDetailsDialogFragment : DialogFragment() {
 
@@ -65,6 +69,8 @@ class MarkerDetailsDialogFragment : DialogFragment() {
             val file = File(path)
             if (file.exists()) {
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+
+                // Cek orientasi EXIF dan putar Bitmap jika perlu
                 try {
                     val exif = ExifInterface(file.absolutePath)
                     val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)

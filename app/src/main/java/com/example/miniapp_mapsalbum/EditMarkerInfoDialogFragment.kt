@@ -2,6 +2,7 @@ package com.example.miniapp_mapsalbum
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.media.ExifInterface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,7 +12,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.DialogFragment
 import com.example.miniapp_mapsalbum.data.Memory
 import java.io.File
