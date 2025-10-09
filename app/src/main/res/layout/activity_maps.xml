@@ -13,49 +13,14 @@
         android:layout_height="match_parent" />
 
     <!-- Search bar ala Google Maps -->
-    <LinearLayout
-        android:id="@+id/searchLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:layout_margin="16dp"
-        android:layout_alignParentTop="true"
-        android:gravity="center_vertical"
-        android:elevation="8dp"
-        android:background="@drawable/bg_search_bar">
-
-        <EditText
-            android:id="@+id/etSearch"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:hint="Cari lokasi"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:background="@android:color/transparent"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textSize="14sp"
-            android:textColor="@android:color/black" />/>
-
-        <ImageButton
-            android:id="@+id/btnSearch"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:src="@android:drawable/ic_menu_search"
-            android:contentDescription="Cari" />
-    </LinearLayout>
 
     <Button
         android:id="@+id/btnMapType"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Peta"
-        android:layout_below="@id/searchLayout"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp" />
+        android:layout_marginTop="50dp"
+        android:layout_marginEnd="8dp" />
 
 </RelativeLayout>

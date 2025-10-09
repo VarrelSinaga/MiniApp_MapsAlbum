@@ -72,6 +72,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.uiSettings.isZoomControlsEnabled = true
+        mMap.uiSettings.isCompassEnabled = true
+        mMap.uiSettings.isMyLocationButtonEnabled = true
+        mMap.uiSettings.isMapToolbarEnabled = true
+        mMap.uiSettings.isScrollGesturesEnabled = true
+        mMap.uiSettings.isTiltGesturesEnabled = true
+        mMap.uiSettings.isZoomGesturesEnabled = true
         checkLocationPermission()
         setupMapListeners()
 
